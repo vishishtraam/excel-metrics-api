@@ -1,0 +1,3 @@
+class InvalidExcelFile(Exception):
+    
+    pass
