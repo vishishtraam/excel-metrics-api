@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, UploadFile, File 
 from typing import List, Dict
 from app.services.metrics_service import MetricsService
 from app.schemas.metrics_schemas import GroupTotal
@@ -6,8 +6,13 @@ from app.api.dependencies import get_metrics_service, get_db_cursor
 from psycopg2.extensions import cursor  # for type hints
 from pathlib import Path
 import pandas as pd
+import os, shutil                                     
+from app.utils.data_cleaner import clean_file
 
 router = APIRouter(prefix="/metrics", tags=["metrics"])
+
+RAW_DIR = "app/api/uploads/raw_data"
+CLEANED_DIR = "app/api/uploads/cleaned_data"
 
 
 @router.get("/totals/regions", response_model=List[GroupTotal])
@@ -41,3 +46,25 @@ def get_all_metrics(
     cur: cursor = Depends(get_db_cursor)
 ):
     return service.get_all_metrics(cur)
+
+
+@router.post("/upload_file/")
+async def upload_file(file: UploadFile = File(...)):
+    # Ensure both folders exist
+    os.makedirs(RAW_DIR, exist_ok=True)
+    os.makedirs(CLEANED_DIR, exist_ok=True)
+
+    # Save raw file
+    raw_path = os.path.join(RAW_DIR, file.filename)
+    with open(raw_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    # Clean file → save in CLEANED_DIR
+    cleaned_path, df = clean_file(raw_path, CLEANED_DIR)
+
+    return {
+        "message": "✅ File uploaded and cleaned successfully",
+        "raw_file": os.path.basename(raw_path),
+        "cleaned_file": os.path.basename(cleaned_path),
+        "rows_cleaned": len(df)
+    }
