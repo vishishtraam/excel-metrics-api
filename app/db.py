@@ -1,22 +1,26 @@
-from sqlalchemy import create_engine
-from sqlalchemy.orm import sessionmaker, declarative_base
+import psycopg2
 
-# Change username, password, and dbname as per your setup
-DATABASE_URL = "postgresql://postgres:Vishi@localhost:5432/metrics-api"
+try:
+    # Establish a connection to the PostgreSQL database
+    conn = psycopg2.connect(
+        host="localhost",
+        dbname="metrics-api",
+        user="postgres",
+        password="Vishi"
+    )                  
 
-# Create engine to connect to PostgreSQL
-engine = create_engine(DATABASE_URL)
+    # Create a cursor object to execute SQL queries
+    cursor = conn.cursor()
 
-# Create a session factory for database operations
-SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    # Execute a sample query
+    cursor.execute("SELECT version();")
 
-# Base class for creating database models
-Base = declarative_base()
+    # Fetch and print the result
+    print("PostgreSQL database version:", cursor.fetchone())
 
-# Dependency to get DB session
-def get_db():
-    db = SessionLocal()
-    try:
-        yield db
-    finally:
-        db.close()
+    # Close the cursor and connection
+    cursor.close()
+    conn.close()
+
+except psycopg2.Error as e:
+    print(f"Error connecting to PostgreSQL: {e}")

@@ -1,8 +1,11 @@
-
-class Settings:
-    APP_NAME = "ExcelMetrics API"  
-    VERSION = "1.0"                
-    MAX_UPLOAD_MB = 5              
+from pydantic_settings import BaseSettings
 
 
-settings = Settings()
+class AppConfig(BaseSettings):
+    DATASET_PATH: str
+
+    class Config:
+        env_file = ".env"   # tells Pydantic to load from .env
+
+
+settings = AppConfig()
